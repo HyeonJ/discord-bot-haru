@@ -211,6 +211,7 @@ function resolveMentions(msg) {
 
 client.on('messageCreate', async (msg) => {
   const botId = process.env.HARU_BOT_ID || client.user?.id;
+  if (msg.author.id !== botId) resetIdleTimer();
 
   // DM 처리
   if (!msg.guildId) {
@@ -388,6 +389,23 @@ try {
   });
   console.log('[relay] Fallback to fs.watchFile for status file');
 }
+
+// --- Idle 감지 + 리서치 트리거 ---
+const IDLE_THRESHOLD_MS = 30 * 60 * 1000;
+const IDLE_REPEAT_MS = 30 * 60 * 1000;
+let lastMessageTime = Date.now();
+let lastReminderTime = 0;
+function resetIdleTimer() { lastMessageTime = Date.now(); lastReminderTime = 0; }
+setInterval(() => {
+  const now = Date.now();
+  const idleElapsed = now - lastMessageTime;
+  const sinceLastReminder = now - lastReminderTime;
+  const threshold = lastReminderTime === 0 ? IDLE_THRESHOLD_MS : IDLE_REPEAT_MS;
+  if (idleElapsed >= IDLE_THRESHOLD_MS && sinceLastReminder >= threshold) {
+    lastReminderTime = now;
+    sendToTmux('<system-reminder>idle 타임. memory/research-topics.md 확인하고 리서치 보강해줘.</system-reminder>');
+  }
+}, 60 * 1000);
 
 // --- 크래시 방지 ---
 process.on('uncaughtException', (err) => {
