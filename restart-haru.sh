@@ -11,7 +11,7 @@ systemctl --user stop haru-relay.service 2>/dev/null && echo "[restart] relay pa
 
 # Claude Code 세션 재시작
 if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
-  if tmux respawn-pane -k -t "$SESSION_NAME" "cd $SCRIPT_DIR && claude --model claude-opus-4-6 --dangerously-skip-permissions --continue" 2>/dev/null; then
+  if tmux respawn-pane -k -t "$SESSION_NAME" "cd $SCRIPT_DIR && claude --model 'opus[1m]' --dangerously-skip-permissions --continue" 2>/dev/null; then
     echo "[restart] Claude Code restarted"
   else
     echo "[restart] respawn-pane failed, falling back to start-haru.sh..."

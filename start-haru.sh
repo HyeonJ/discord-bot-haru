@@ -33,7 +33,7 @@ claude config set autoCompact true 2>/dev/null && echo "[start] autoCompact enab
 
 # tmux 세션 생성 + Claude Code 실행
 tmux new-session -d -s "$SESSION_NAME" -c "$SCRIPT_DIR"
-tmux send-keys -t "$SESSION_NAME" "claude --model claude-opus-4-6 --dangerously-skip-permissions" C-m
+tmux send-keys -t "$SESSION_NAME" "claude --model 'opus[1m]' --dangerously-skip-permissions" C-m
 
 # relay 시작 (systemd user service — 죽어도 자동 재시작됨)
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
