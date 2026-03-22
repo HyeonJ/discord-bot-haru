@@ -40,6 +40,9 @@ export XDG_RUNTIME_DIR=/run/user/$(id -u)
 systemctl --user restart haru-relay.service
 echo "[start] relay 시작됨 (systemd)"
 
+# 시스템 메시지 전송 (봇-놀이터)
+"$SCRIPT_DIR/discord-send" -c 1480479067881865347 '> **[system]** 컴퓨터 재부팅 후 하루 세션이 시작되었습니다.'
+
 # Claude Code가 준비될 때까지 대기 후 초기 메시지 전송
 sleep 8
 TODAY=$(TZ=Asia/Seoul date +%Y-%m-%d)

@@ -29,6 +29,9 @@ fi
 sleep 2
 systemctl --user start haru-relay.service 2>/dev/null && echo "[restart] relay resumed" || true
 
+# 시스템 메시지 전송 (봇-놀이터)
+"$SCRIPT_DIR/discord-send" -c 1480479067881865347 '> **[system]** 하루 세션을 재시작했습니다.'
+
 # Claude Code가 준비될 때까지 대기 후 히스토리 트리거
 sleep 5
 TODAY=$(TZ=Asia/Seoul date +%Y-%m-%d)
