@@ -26,8 +26,24 @@ rsync $RSYNC_OPTS \
   2>/dev/null
 HISTORY_OK=$?
 
+# 3. .env 암호화 백업 (1일 1회 — 시간이 0시일 때만)
+ENV_OK=0
+HOUR=$(date +%H)
+if [ "$HOUR" = "00" ]; then
+  AGE_KEY="$HOME/.claude/haru-age-key.txt"
+  AGE_PUB="age1qgmlu9q0jfqe5ty983s6ppqq0n573wfje0pmd3aecjc48mqjyedq486s5a"
+  ENV_FILE="$HOME/discord-bot-haru/.env"
+  if [ -f "$ENV_FILE" ] && command -v age >/dev/null 2>&1; then
+    age -r "$AGE_PUB" -o /tmp/haru-env.age "$ENV_FILE" 2>/dev/null
+    scp -P "$NAS_PORT" -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+      /tmp/haru-env.age "$NAS_USER@$NAS_HOST:$NAS_BASE/env.age" 2>/dev/null
+    ENV_OK=$?
+    rm -f /tmp/haru-env.age
+  fi
+fi
+
 if [ $MEMORY_OK -eq 0 ] && [ $HISTORY_OK -eq 0 ]; then
   echo "[$(date '+%Y-%m-%d %H:%M')] backup OK (memory+history)" >> "$LOG"
 else
-  echo "[$(date '+%Y-%m-%d %H:%M')] backup PARTIAL (memory=$MEMORY_OK history=$HISTORY_OK)" >> "$LOG"
+  echo "[$(date '+%Y-%m-%d %H:%M')] backup PARTIAL (memory=$MEMORY_OK history=$HISTORY_OK env=$ENV_OK)" >> "$LOG"
 fi
