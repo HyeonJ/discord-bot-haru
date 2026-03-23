@@ -10,15 +10,39 @@ AUTH="Authorization: Bot $DISCORD_BOT_TOKEN"
 FILE=""
 MESSAGE=""
 REPLY_TO=""
+THREAD_NAME=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -f|--file) FILE="$2"; shift 2 ;;
     -c|--channel) CHANNEL_ID="$2"; shift 2 ;;
     -r|--reply) REPLY_TO="$2"; shift 2 ;;
+    -t|--thread) THREAD_NAME="$2"; shift 2 ;;
     *) MESSAGE="$1"; shift ;;
   esac
 done
+
+# 채널명 → 채널ID 변환 (channel-map.json)
+MAP_FILE="$SCRIPT_DIR/channel-map.json"
+if [[ -f "$MAP_FILE" ]] && [[ ! "$CHANNEL_ID" =~ ^[0-9]+$ ]]; then
+  RESOLVED=$(python3 -c "import json,sys; m=json.load(open('$MAP_FILE')); print(m.get(sys.argv[1],''))" "$CHANNEL_ID" 2>/dev/null)
+  [[ -n "$RESOLVED" ]] && CHANNEL_ID="$RESOLVED"
+fi
+
+# 스레드 생성 모드
+if [[ -n "$THREAD_NAME" ]]; then
+  THREAD_RESULT=$(curl -s -H "$AUTH" -H "Content-Type: application/json" \
+    -d "{\"name\":\"$THREAD_NAME\",\"type\":11}" \
+    "https://discord.com/api/v10/channels/$CHANNEL_ID/threads" 2>/dev/null)
+  THREAD_ID=$(echo "$THREAD_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
+  if [[ -n "$THREAD_ID" ]]; then
+    CHANNEL_ID="$THREAD_ID"
+    echo "Thread created: $THREAD_NAME ($THREAD_ID)"
+  else
+    echo "Thread creation failed"
+    exit 1
+  fi
+fi
 
 API="https://discord.com/api/v10/channels/$CHANNEL_ID/messages"
 
