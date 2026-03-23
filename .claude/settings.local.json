@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/home/bpx27/discord-bot-haru/discord-send -c 1480479067881865347 \"Notion MCP 설정 추가했어. 재시작하면 브라우저 인증 팝업 뜰 거야. 니니 HP 노트북에서 로그인해줘야 해. 재시작할까?\")",
+      "Bash(/home/bpx27/discord-bot-haru/discord-send -c 1480479067881865347 \"원인: restart-haru.sh에 watcher 코드가 빠져있었어. start-haru.sh에만 있고 restart에는 없었음. 방금 restart-haru.sh에도 추가 완료. 이제 restart로 재시작해도 watcher 자동 실행돼\")",
+      "Bash(/home/bpx27/discord-bot-haru/discord-send -c 1480479067881865347 \"이미 반영돼있어. sed '/^$/d' | tail -1 으로 빈 줄 제거 후 마지막 줄 감지. start-haru.sh/restart-haru.sh 둘 다 nohup으로 실행하니까 SSH 끊겨도 안 죽어\")",
+      "Bash(/home/bpx27/discord-bot-haru/discord-send -c 1480479067881865347 \"니노가 SSH로 띄운 watcher는 SSH 끊기면 죽을 수 있어. 재시작하면 start-haru.sh에서 nohup으로 자동 실행돼서 안정적이야. 재시작할게\")",
+      "Bash(/home/bpx27/discord-bot-haru/discord-send -c 1480479067881865347 '> **[system]** 하루 재부팅합니다.')",
+      "Bash(/home/bpx27/discord-bot-haru/discord-send -c 1480479067881865347 \"미안 restart-haru.sh 실행을 안 했어. 지금 실행할게\")"
+    ]
+  }
+}
