@@ -1,64 +1,189 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-source "$SCRIPT_DIR/.env"
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/../.env"
 
-CHANNEL_ID="${DISCORD_CHANNEL_ID:-1479813609499394169}"
 AUTH="Authorization: Bot $DISCORD_BOT_TOKEN"
+CHANNEL_MAP="$SCRIPT_DIR/../config/channel-map.json"
+MENTION_MAP="$SCRIPT_DIR/../config/mention-map.json"
+HASH_DB="$HOME/.local/share/yaksu-history/messages.db"
 
 FILE=""
 MESSAGE=""
+TARGET=""
 REPLY_TO=""
 THREAD_NAME=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     -f|--file) FILE="$2"; shift 2 ;;
-    -c|--channel) CHANNEL_ID="$2"; shift 2 ;;
-    -r|--reply) REPLY_TO="$2"; shift 2 ;;
-    -t|--thread) THREAD_NAME="$2"; shift 2 ;;
-    *) MESSAGE="$1"; shift ;;
+    --target) TARGET="$2"; shift 2 ;;
+    --thread) THREAD_NAME="$2"; shift 2 ;;
+    -h|--help)
+      echo "discord-send — Discord 메시지 전송 CLI"
+      echo ""
+      echo "Usage: discord-send [options] <target> \"메시지\""
+      echo ""
+      echo "Target (필수, 자동 판별):"
+      echo "  채널명        discord-send 충재-다용도 \"메시지\""
+      echo "  스레드해시    discord-send e04z \"메시지\"          # 4자리 base36 → DB에서 thread 조회"
+      echo "  메시지해시    discord-send w3f5 \"메시지\"          # 4자리 base36 → DB에서 message 조회 → reply"
+      echo "  DM            discord-send DM-Tim \"메시지\""
+      echo "  채널ID        discord-send 1479813609499394169 \"메시지\""
+      echo ""
+      echo "Options:"
+      echo "  -f, --file <경로>       파일 첨부"
+      echo "  --thread <스레드명>     새 스레드 생성 (target = 부모 채널)"
+      echo "  --target <target>       target을 옵션으로 지정 (positional 대신)"
+      echo "  -h, --help              이 도움말"
+      echo ""
+      echo "Examples:"
+      echo "  discord-send 충재-다용도 \"안녕\""
+      echo "  discord-send e04z \"스레드에 답장\""
+      echo "  discord-send w3f5 \"이 메시지에 reply\""
+      echo "  discord-send -f /tmp/img.png 충재-다용도 \"이미지 첨부\""
+      echo "  discord-send --thread \"새 스레드\" 충재-다용도 \"첫 메시지\""
+      echo ""
+      echo "Available channels: $(python3 -c "import json; print(', '.join(json.load(open('$CHANNEL_MAP')).keys()))" 2>/dev/null)"
+      exit 0 ;;
+    --) shift; break ;;
+    -*) echo "Error: unknown option '$1'. Use -- before message if it starts with -" >&2; exit 1 ;;
+    *)
+      if [[ -z "$TARGET" ]]; then
+        TARGET="$1"
+      else
+        MESSAGE="$1"
+      fi
+      shift ;;
   esac
 done
 
-# 채널명 → 채널ID 변환 (channel-map.json)
-MAP_FILE="$SCRIPT_DIR/config/channel-map.json"
-if [[ -f "$MAP_FILE" ]] && [[ ! "$CHANNEL_ID" =~ ^[0-9]+$ ]]; then
-  RESOLVED=$(python3 -c "import json,sys; m=json.load(open('$MAP_FILE')); print(m.get(sys.argv[1],''))" "$CHANNEL_ID" 2>/dev/null)
-  [[ -n "$RESOLVED" ]] && CHANNEL_ID="$RESOLVED"
-fi
-
-# 스레드 생성 모드
-if [[ -n "$THREAD_NAME" ]]; then
-  THREAD_RESULT=$(curl -s -H "$AUTH" -H "Content-Type: application/json" \
-    -d "{\"name\":\"$THREAD_NAME\",\"type\":11}" \
-    "https://discord.com/api/v10/channels/$CHANNEL_ID/threads" 2>/dev/null)
-  THREAD_ID=$(echo "$THREAD_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('id',''))" 2>/dev/null)
-  if [[ -n "$THREAD_ID" ]]; then
-    CHANNEL_ID="$THREAD_ID"
-    echo "Thread created: $THREAD_NAME ($THREAD_ID)"
+# Require target
+if [[ -z "$TARGET" ]]; then
+  if [[ -n "$THREAD_NAME" ]]; then
+    TARGET="봇-놀이터"
   else
-    echo "Thread creation failed"
+    echo "Error: target is required." >&2
+    echo "" >&2
+    echo "Usage:" >&2
+    echo "  discord-send <target> \"메시지\"                     # 채널/스레드/reply 자동 판별" >&2
+    echo "  discord-send 충재-다용도 \"메시지\"                   # 채널명" >&2
+    echo "  discord-send e04z \"메시지\"                         # 스레드 해시" >&2
+    echo "  discord-send w3f5 \"메시지\"                         # 메시지 해시 → reply" >&2
+    echo "  discord-send DM-Tim \"메시지\"                       # DM 전송" >&2
+    echo "  discord-send -f 파일경로 충재-다용도 \"메시지\"       # 파일 첨부" >&2
+    echo "  discord-send --thread \"스레드명\" 충재-다용도 \"메시지\"  # 새 스레드 생성" >&2
+    echo "" >&2
+    echo "Available channels: $(python3 -c "import json; print(', '.join(json.load(open('$CHANNEL_MAP')).keys()))" 2>/dev/null)" >&2
     exit 1
   fi
+fi
+
+# 4자리 base36 해시 패턴 체크
+is_hash() { [[ "$1" =~ ^[0-9a-z]{4}$ ]]; }
+
+# 해시 → DB 조회 (thread_hash 먼저, 없으면 message_hash)
+resolve_hash() {
+  local hash="$1"
+  if [[ -f "$HASH_DB" ]]; then
+    python3 -c "
+import sqlite3, sys
+try:
+    db = sqlite3.connect(sys.argv[1])
+    h = sys.argv[2]
+    # 1. thread_hash로 검색 → 스레드 ID 반환
+    row = db.execute('SELECT thread_id FROM messages WHERE thread_hash = ? AND thread_id IS NOT NULL ORDER BY timestamp DESC LIMIT 1', (h,)).fetchone()
+    if row and row[0]:
+        print('thread:' + str(row[0]))
+    else:
+        # 2. message_hash로 검색 → 메시지 ID + 채널 ID 반환 (reply용)
+        row = db.execute('SELECT message_id, COALESCE(thread_id, channel_id) FROM messages WHERE message_hash = ? ORDER BY timestamp DESC LIMIT 1', (h,)).fetchone()
+        if row and row[0]:
+            print('reply:' + str(row[0]) + ':' + str(row[1]))
+        else:
+            print('')
+except Exception:
+    print('')
+" "$HASH_DB" "$hash" 2>/dev/null
+  fi
+}
+
+CHANNEL_ID=""
+
+# Target 해석
+if [[ "$TARGET" =~ ^[0-9]+$ ]]; then
+  # 숫자 ID → 그대로 채널 ID
+  CHANNEL_ID="$TARGET"
+elif is_hash "$TARGET"; then
+  # 4자리 해시 → DB 조회
+  RESOLVED=$(resolve_hash "$TARGET")
+  if [[ "$RESOLVED" == thread:* ]]; then
+    CHANNEL_ID="${RESOLVED#thread:}"
+  elif [[ "$RESOLVED" == reply:* ]]; then
+    IFS=':' read -r _ MSG_ID CH_ID <<< "$RESOLVED"
+    REPLY_TO="$MSG_ID"
+    CHANNEL_ID="$CH_ID"
+  else
+    echo "Error: hash '$TARGET' not found in DB" >&2
+    exit 1
+  fi
+elif [[ -f "$CHANNEL_MAP" ]]; then
+  # 채널명 → channel-map.json 조회
+  RESOLVED=$(python3 -c "import json,sys; m=json.load(open(sys.argv[1])); print(m.get(sys.argv[2],''))" "$CHANNEL_MAP" "$TARGET" 2>/dev/null)
+  if [[ -n "$RESOLVED" ]]; then
+    CHANNEL_ID="$RESOLVED"
+  else
+    echo "Error: target '$TARGET' not found in channel-map.json or hash DB" >&2
+    exit 1
+  fi
+fi
+
+# --thread: 부모 채널에 스레드 생성 후 스레드 ID를 CHANNEL_ID로 교체
+if [[ -n "$THREAD_NAME" ]]; then
+  THREAD_PAYLOAD=$(python3 -c "import json,sys; print(json.dumps({'name':sys.argv[1],'type':11,'auto_archive_duration':10080}))" "$THREAD_NAME")
+  THREAD_RESPONSE=$(curl -s -X POST "https://discord.com/api/v10/channels/$CHANNEL_ID/threads" \
+    -H "$AUTH" \
+    -H "Content-Type: application/json" \
+    -d "$THREAD_PAYLOAD")
+  THREAD_ID=$(python3 -c "import json,sys; d=json.loads(sys.argv[1]); print(d.get('id',''))" "$THREAD_RESPONSE")
+  if [[ -z "$THREAD_ID" ]]; then
+    echo "Error: 스레드 생성 실패: $THREAD_RESPONSE" >&2
+    exit 1
+  fi
+  # channel-map.json에 스레드명 → 스레드 ID 등록
+  node -e "
+    const fs = require('fs');
+    const map = JSON.parse(fs.readFileSync('$CHANNEL_MAP', 'utf8'));
+    map['$THREAD_NAME'] = '$THREAD_ID';
+    fs.writeFileSync('$CHANNEL_MAP', JSON.stringify(map, null, 2) + '\n');
+    console.log('Registered thread: $THREAD_NAME -> $THREAD_ID');
+  "
+  CHANNEL_ID="$THREAD_ID"
 fi
 
 API="https://discord.com/api/v10/channels/$CHANNEL_ID/messages"
 
 JSON_PAYLOAD=$(python3 -c "
-import json,sys
-payload = {'content': sys.argv[1]}
+import json,sys,os,re
+msg = sys.argv[1].replace(r'\n', '\n')
+mention_map = sys.argv[3]
+if os.path.exists(mention_map):
+    m = json.load(open(mention_map))
+    for name, uid in m.items():
+        msg = re.sub(r'(?<![<])@' + re.escape(name) + r'\b', '<@' + uid + '>', msg)
+payload = {'content': msg}
 if sys.argv[2]:
     payload['message_reference'] = {'message_id': sys.argv[2]}
 print(json.dumps(payload))
-" "$MESSAGE" "$REPLY_TO")
+" "$MESSAGE" "$REPLY_TO" "$MENTION_MAP")
 
 if [[ -n "$FILE" ]]; then
   curl -s -H "$AUTH" -F "payload_json=$JSON_PAYLOAD" -F "files[0]=@$FILE" "$API" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('content','') or d.get('message','error'))"
 elif [[ -n "$MESSAGE" ]]; then
   curl -s -H "$AUTH" -H "Content-Type: application/json" -d "$JSON_PAYLOAD" "$API" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('content','') or d.get('message','error'))"
 else
-  echo "Usage: discord-send [-f file] [-c channel_id] [-r reply_msg_id] \"message\""
+  echo "Usage: discord-send <target> \"message\"" >&2
+  echo "       discord-send --thread \"thread name\" <parent-channel> \"message\"" >&2
   exit 1
 fi
