@@ -63,6 +63,15 @@
   - **Haiku** (`claude-haiku-4-5-20251001`): 간단한 검색, 파일 읽기, 짧은 작업
   - **Sonnet** (`claude-sonnet-4-6`): 복잡한 코딩, 멀티스텝 작업, 판단이 필요한 작업
 
+## agent-browser 규칙
+- **--cdp 필수** — 기존 Chrome에 연결해야 Darren이 화면 볼 수 있음. 없으면 headless로 뜸
+- HP노트북 Chrome: `--cdp 9222` (portproxy 172.22.192.1:9222 → 127.0.0.1:9222)
+- **dialog 처리**: `agent-browser --cdp 9222 dialog accept` / `dialog dismiss` (alert/confirm 수락/거부)
+- **탭 확인**: 작업 전 `curl http://172.22.192.1:9222/json/list`로 타겟 확인
+- **탭 활성화**: `curl http://172.22.192.1:9222/json/activate/<targetId>` — 사용자에게 보이게
+- **로그인 항상 먼저 확인** — 작업 전 로그인 상태 체크
+- **이미지 추출**: ChatGPT = `img[alt="생성된 이미지 N"]`, Mage = `img[src*="temp/30d/creations"]`
+
 ## 사람에게 부탁할 때
 - 같은 결과를 낼 수 있는 더 쉬운 방법이 있으면 그걸로 안내할 것
 - 예: SSH 키 등록보다 gh auth login이 더 쉬움
