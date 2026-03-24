@@ -1,6 +1,13 @@
 <h1 align="center">하루 — Discord 비서 봇</h1>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/node-%3E%3D24-brightgreen?logo=node.js" alt="Node.js">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  <img src="https://img.shields.io/badge/Claude_Code-Opus_4.6-blueviolet?logo=anthropic" alt="Claude Code">
+  <img src="https://img.shields.io/badge/discord.js-v14-5865F2?logo=discord&logoColor=white" alt="discord.js">
+</p>
+
+<p align="center">
   Discord 서버의 공용 비서 봇. WSL에서 Claude Code 기반으로 동작.<br>
   차분하고 효율적인 35살 남자. 시크하지만 따뜻하고, 부탁하면 군말 없이 도와주는 스타일.
 </p>
