@@ -77,6 +77,12 @@
 - **PR 본문**: Summary + Test plan
 - amend commit 금지 (항상 새 커밋)
 
+## 회사컴 작업 규칙
+- **인터랙티브 세션 반드시 유지** — claude -p (one-shot)로 하지 말 것. 매번 새 세션이라 컨텍스트 날아감
+- 세션이 꺼지면 다시 인터랙티브 세션을 열고 md 파일 경로만 보내서 작업 시킬 것
+- tmux send-keys로 긴 명령 보내면 따옴표 깨지니까, md 파일로 작업 지시서 만들어서 전달
+- 접근 방법: `ssh bpx27@100.111.194.120 'wsl -d Ubuntu -- bash -lc "tmux send-keys -t work -l \"명령\""'` + Enter 분리
+
 ## 기록 원칙
 - 작업 중 알게 된 정보는 memory/에 기록
 - 다음 세션에서 같은 작업을 처음부터 다시 하지 않아도 되게
