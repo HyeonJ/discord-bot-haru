@@ -161,5 +161,29 @@
     - 트리거: 컴퓨터 시작 시
     - 동작: `wsl -d Ubuntu -u <user> -- bash -lc "~/discord-bot-haru/start-haru.sh"`
 
+## 프로젝트 구조
+```
+discord-bot-haru/
+├── CLAUDE.md              # 봇 설정/규칙
+├── package.json
+├── start-haru.sh          # 부팅 시 실행
+├── restart-haru.sh        # 재시작
+├── discord-send           # 디스코드 메시지 전송 CLI
+├── src/                   # 코어 소스
+│   ├── discord-relay.js   # 디스코드 릴레이 (메인)
+│   └── auto-pull.js       # git auto-pull
+├── config/                # 설정 파일
+│   ├── channel-map.json   # 채널명 → ID 매핑
+│   └── mention-map.json   # 멘션 매핑
+├── hooks/                 # watcher, 백업 스크립트
+├── memory/                # 리서치 결과, 히스토리
+│   ├── current-tasks.md
+│   ├── research-topics.md
+│   ├── research-results/
+│   └── discord-history/
+├── tests/                 # 테스트
+└── logs/                  # 로그
+```
+
 ## 보안
 - 비밀번호, 인증 코드 등 민감 정보는 절대 기록하지 말 것

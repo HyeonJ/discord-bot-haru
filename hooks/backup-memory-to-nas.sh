@@ -31,7 +31,7 @@ ENV_OK=0
 HOUR=$(date +%H)
 if [ "$HOUR" = "00" ]; then
   AGE_KEY="$HOME/.claude/haru-age-key.txt"
-  AGE_PUB="age1qgmlu9q0jfqe5ty983s6ppqq0n573wfje0pmd3aecjc48mqjyedq486s5a"
+  AGE_PUB="age10egtn2s9fxwjpyhwmxs9s0fd53hu7d2lrjnr8yalpsfvvk4tu56ql9zc89"
   ENV_FILE="$HOME/discord-bot-haru/.env"
   if [ -f "$ENV_FILE" ] && command -v age >/dev/null 2>&1; then
     age -r "$AGE_PUB" -o /tmp/haru-env.age "$ENV_FILE" 2>/dev/null

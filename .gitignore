@@ -14,3 +14,6 @@ memory/discord-history/
 .claude/projects/
 .claude/credentials*
 .claude/*.json.bak
+memory/research-results/
+memory/research-topics.md
+memory/current-tasks.md

@@ -23,7 +23,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # 채널명 → 채널ID 변환 (channel-map.json)
-MAP_FILE="$SCRIPT_DIR/channel-map.json"
+MAP_FILE="$SCRIPT_DIR/config/channel-map.json"
 if [[ -f "$MAP_FILE" ]] && [[ ! "$CHANNEL_ID" =~ ^[0-9]+$ ]]; then
   RESOLVED=$(python3 -c "import json,sys; m=json.load(open('$MAP_FILE')); print(m.get(sys.argv[1],''))" "$CHANNEL_ID" 2>/dev/null)
   [[ -n "$RESOLVED" ]] && CHANNEL_ID="$RESOLVED"

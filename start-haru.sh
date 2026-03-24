@@ -35,13 +35,18 @@ claude config set autoCompact true 2>/dev/null && echo "[start] autoCompact enab
 tmux new-session -d -s "$SESSION_NAME" -c "$SCRIPT_DIR"
 tmux send-keys -t "$SESSION_NAME" "claude --model 'opus[1m]' --dangerously-skip-permissions" C-m
 
+# auto-approve watcher 시작 (기존 프로세스 종료 후 재시작)
+pkill -f "auto-approve-claude.sh" 2>/dev/null || true
+nohup bash "$SCRIPT_DIR/hooks/auto-approve-claude.sh" > /dev/null 2>&1 &
+echo "[start] auto-approve watcher 시작됨"
+
 # relay 시작 (systemd user service — 죽어도 자동 재시작됨)
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 systemctl --user restart haru-relay.service
 echo "[start] relay 시작됨 (systemd)"
 
 # 시스템 메시지 전송 (봇-놀이터)
-"$SCRIPT_DIR/discord-send" -c 1480479067881865347 '> **[system]** 컴퓨터 재부팅 후 하루 세션이 시작되었습니다.'
+"$SCRIPT_DIR/../scripts/discord-send" -c 1480479067881865347 '> **[system]** 컴퓨터 재부팅 후 하루 세션이 시작되었습니다.'
 
 # Claude Code가 준비될 때까지 대기 후 초기 메시지 전송
 sleep 8

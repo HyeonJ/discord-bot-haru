@@ -5,6 +5,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SESSION_NAME="haru"
 
+# auto-approve watcher 시작 (기존 프로세스 종료 후 재시작)
+pkill -f "auto-approve-claude.sh" 2>/dev/null || true
+nohup bash "$SCRIPT_DIR/hooks/auto-approve-claude.sh" > /dev/null 2>&1 &
+echo "[restart] auto-approve watcher 시작됨"
+
 # relay 일시정지 (경합 방지)
 export XDG_RUNTIME_DIR=/run/user/$(id -u)
 systemctl --user stop haru-relay.service 2>/dev/null && echo "[restart] relay paused" || true
@@ -30,10 +35,23 @@ sleep 2
 systemctl --user start haru-relay.service 2>/dev/null && echo "[restart] relay resumed" || true
 
 # 시스템 메시지 전송 (봇-놀이터)
-"$SCRIPT_DIR/discord-send" -c 1480479067881865347 '> **[system]** 하루 세션을 재시작했습니다.'
+"$SCRIPT_DIR/../scripts/discord-send" -c 1480479067881865347 '> **[system]** 하루 세션을 재시작했습니다.'
 
-# Claude Code가 준비될 때까지 대기 후 히스토리 트리거
-sleep 5
+# Claude Code 준비 대기 (프롬프트 감지)
+PANE="${SESSION_NAME}:0.0"
+for i in $(seq 1 60); do
+  CONTENT=$(tmux capture-pane -t "$PANE" -p 2>/dev/null | tail -5)
+  if echo "$CONTENT" | grep -qE '❯|human:|Human:'; then
+    break
+  fi
+  sleep 2
+done
+
+# 플러그인 리로드 먼저 (idle 상태에서만 동작)
+tmux send-keys -t "$SESSION_NAME" '/reload-plugins' C-m
+sleep 10
+
+# 히스토리 트리거
 TODAY=$(TZ=Asia/Seoul date +%Y-%m-%d)
 HISTORY_FILE="$SCRIPT_DIR/memory/discord-history/$TODAY.jsonl"
 
