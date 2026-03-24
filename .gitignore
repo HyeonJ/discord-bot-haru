@@ -1,19 +1,15 @@
 node_modules/
 .env
 /tmp/
-logs/*.log
+logs/
 memory/discord-history/
-
-# Claude Code — 트래킹할 것
-# .claude/skills/ ✅
-# .claude/hooks/ ✅
-# .claude/agents/ ✅
-# .claude/settings.local.json ✅
-
-# Claude Code — 트래킹 안 할 것 (개인정보 포함 가능)
-.claude/projects/
-.claude/credentials*
-.claude/*.json.bak
 memory/research-results/
 memory/research-topics.md
 memory/current-tasks.md
+package-lock.json
+skills-lock.json
+
+# Claude Code — 트래킹 안 할 것
+.claude/projects/
+.claude/credentials*
+.claude/*.json.bak

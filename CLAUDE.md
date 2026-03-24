@@ -91,12 +91,12 @@
 
 ## 재부팅 규칙
 - 재부팅 전 봇-놀이터 채널에 `> **[system]** 하루 재부팅합니다.` 전송 후 `echo "1" > logs/pending-restart-notify.txt` 저장
-- 그 다음 `~/discord-bot-haru/restart-haru.sh` 실행
+- 그 다음 `~/discord-bot-haru/scripts/restart-haru.sh` 실행
 
 ## 운영 참고 (Darren용)
 - **터미널 닫아도 하루는 계속 동작함** — tmux 세션이 백그라운드에서 유지
   - 다시 보려면 WSL에서: `tmux attach -t haru`
-- **컴퓨터 재부팅 후** — 자동 실행 안 켜지면 WSL에서: `~/discord-bot-haru/start-haru.sh`
+- **컴퓨터 재부팅 후** — 자동 실행 안 켜지면 WSL에서: `~/discord-bot-haru/scripts/start-haru.sh`
 
 ## 서버 정보
 - **서버**: 약수하우스 (Guild ID: 1479813608023134342)
@@ -156,10 +156,10 @@
 6. `.env` 파일 생성 (위 1번 참고)
 7. systemd user service 등록 (위 2번 참고)
 8. Claude Code 설치: `npm install -g @anthropic-ai/claude-code`
-9. 실행: `~/discord-bot-haru/start-haru.sh`
+9. 실행: `~/discord-bot-haru/scripts/start-haru.sh`
 10. Windows 작업 스케줄러에 자동 시작 등록 (재부팅 후 자동 실행)
     - 트리거: 컴퓨터 시작 시
-    - 동작: `wsl -d Ubuntu -u <user> -- bash -lc "~/discord-bot-haru/start-haru.sh"`
+    - 동작: `wsl -d Ubuntu -u <user> -- bash -lc "~/discord-bot-haru/scripts/start-haru.sh"`
 
 ## 프로젝트 구조
 ```

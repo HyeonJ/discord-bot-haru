@@ -7,7 +7,7 @@ require('dotenv').config();
 const { shouldAutoPull, runAutoPull } = require('./auto-pull');
 
 const ATTACHMENT_DIR = '/tmp/discord-attachments';
-const HISTORY_DIR = path.join(__dirname, 'memory', 'discord-history');
+const HISTORY_DIR = path.join(__dirname, '..', 'memory', 'discord-history');
 
 const TMUX_SESSION = process.env.TMUX_SESSION || 'haru';
 const GUILD_ID = '1479813608023134342';
