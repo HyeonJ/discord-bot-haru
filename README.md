@@ -1,7 +1,7 @@
 <h1 align="center">하루 — Discord 비서 봇</h1>
 
 <p align="center">
-  Discord 서버의 공용 비서 봇. HP 노트북 WSL에서 Claude Code 기반으로 동작.
+  Discord 서버의 공용 비서 봇. WSL에서 Claude Code 기반으로 동작.
 </p>
 
 ---
